@@ -57,6 +57,7 @@
 #ifdef HAVE_EXECINFO_H
 #include <execinfo.h>
 #endif
+#include <sys/wait.h>
 
 #ifndef EVBACKEND_LINUXAIO
 #define EVBACKEND_LINUXAIO 0x00000040U
@@ -2697,7 +2698,7 @@ pgexporter_backtrace(void)
 
    if (s != NULL)
    {
-      pgexporter_log_debug(s);
+      pgexporter_log_debug("%s", s);
    }
 
    free(s);
@@ -2729,55 +2730,123 @@ pgexporter_backtrace_string(char** s)
       uint64_t addr = (uint64_t)bt[i];
       uint64_t offset;
       char* filepath = NULL;
-      char cmd[256], buffer[256], log_buffer[64];
+      char buffer[256], log_buffer[64];
       bool found_main = false;
-      FILE* pipe;
+      FILE* pipe_fd;
 
       if (calculate_offset(addr, &offset, &filepath))
       {
          continue;
       }
 
-      snprintf(cmd, sizeof(cmd), "addr2line -e %s -fC 0x%lx", filepath, offset);
-      free(filepath);
-      filepath = NULL;
+      int link[2];
+      pid_t pid;
 
-      pipe = popen(cmd, "r");
-      if (pipe == NULL)
+      if (pipe(link) == -1)
       {
-         pgexporter_log_debug("Failed to run command: %s, reason: %s", cmd, strerror(errno));
+         pgexporter_log_debug("Failed to create pipe: %s", strerror(errno));
+         free(filepath);
          continue;
       }
 
-      if (fgets(buffer, sizeof(buffer), pipe) == NULL)
+      pid = fork();
+      if (pid == -1)
       {
-         pgexporter_log_debug("Failed to read from command output: %s", strerror(errno));
-         pclose(pipe);
+         pgexporter_log_debug("Failed to fork: %s", strerror(errno));
+         close(link[0]);
+         close(link[1]);
+         free(filepath);
          continue;
       }
-      buffer[strlen(buffer) - 1] = '\0'; // Remove trailing newline
-      if (strcmp(buffer, "main") == 0)
-      {
-         found_main = true;
-      }
-      snprintf(log_buffer, sizeof(log_buffer), "#%zu  0x%lx in ", i - 1, addr);
-      log_str = pgexporter_append(log_str, log_buffer);
-      log_str = pgexporter_append(log_str, buffer);
-      log_str = pgexporter_append(log_str, "\n");
 
-      if (fgets(buffer, sizeof(buffer), pipe) == NULL)
+      if (pid == 0)
       {
-         log_str = pgexporter_append(log_str, "\tat ???:??\n");
+         char offset_str[32];
+         char* args[6];
+
+         close(link[0]);
+         dup2(link[1], STDOUT_FILENO);
+         close(link[1]);
+
+         snprintf(offset_str, sizeof(offset_str), "0x%lx", offset);
+
+         args[0] = "addr2line";
+         args[1] = "-e";
+         args[2] = filepath;
+         args[3] = "-fC";
+         args[4] = offset_str;
+         args[5] = NULL;
+
+         execvp(args[0], args);
+         exit(1);
       }
       else
       {
-         buffer[strlen(buffer) - 1] = '\0'; // Remove trailing newline
-         log_str = pgexporter_append(log_str, "\tat ");
+         close(link[1]);
+         pipe_fd = fdopen(link[0], "r");
+
+         if (pipe_fd == NULL)
+         {
+            pgexporter_log_debug("Failed to fdopen pipe: %s", strerror(errno));
+            close(link[0]);
+            waitpid(pid, NULL, 0);
+            free(filepath);
+            continue;
+         }
+
+         if (fgets(buffer, sizeof(buffer), pipe_fd) == NULL)
+         {
+            pgexporter_log_debug("Failed to read from pipe output: %s", strerror(errno));
+            fclose(pipe_fd);
+            waitpid(pid, NULL, 0);
+            free(filepath);
+            continue;
+         }
+         size_t len = strlen(buffer);
+         if (len > 0 && buffer[len - 1] == '\n')
+         {
+            buffer[len - 1] = '\0';
+         }
+         len = strlen(buffer);
+         if (len > 0 && buffer[len - 1] == '\r')
+         {
+            buffer[len - 1] = '\0';
+         }
+         if (strcmp(buffer, "main") == 0)
+         {
+            found_main = true;
+         }
+         snprintf(log_buffer, sizeof(log_buffer), "#%zu  0x%lx in ", i - 1, addr);
+         log_str = pgexporter_append(log_str, log_buffer);
          log_str = pgexporter_append(log_str, buffer);
          log_str = pgexporter_append(log_str, "\n");
-      }
 
-      pclose(pipe);
+         if (fgets(buffer, sizeof(buffer), pipe_fd) == NULL)
+         {
+            log_str = pgexporter_append(log_str, "\tat ???:??\n");
+         }
+         else
+         {
+            size_t len = strlen(buffer);
+            if (len > 0 && buffer[len - 1] == '\n')
+            {
+               buffer[len - 1] = '\0';
+            }
+            len = strlen(buffer);
+            if (len > 0 && buffer[len - 1] == '\r')
+            {
+               buffer[len - 1] = '\0';
+            }
+            log_str = pgexporter_append(log_str, "\tat ");
+            log_str = pgexporter_append(log_str, buffer);
+            log_str = pgexporter_append(log_str, "\n");
+         }
+
+         fclose(pipe_fd);
+         waitpid(pid, NULL, 0);
+      }
+      free(filepath);
+      filepath = NULL;
       if (found_main)
       {
          break;
