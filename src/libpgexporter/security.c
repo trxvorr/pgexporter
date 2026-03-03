@@ -503,7 +503,7 @@ pgexporter_remote_management_scram_sha256(char* username, char* password, int se
 
    iteration = atoi(iteration_string);
 
-   memset(&wo_proof[0], 0, sizeof(wo_proof));
+   memset(wo_proof, 0, sizeof(wo_proof));
    pgexporter_snprintf(&wo_proof[0], sizeof(wo_proof), "c=biws,r=%s", combined_nounce);
 
    /* n=,r=... */
@@ -577,6 +577,7 @@ pgexporter_remote_management_scram_sha256(char* username, char* password, int se
 
    free(salt);
    free(err);
+   pgexporter_cleanse(password_prep, password_prep != NULL ? strlen(password_prep) : 0);
    free(password_prep);
    free(client_nounce);
    free(combined_nounce);
@@ -603,6 +604,7 @@ bad_password:
 
    free(salt);
    free(err);
+   pgexporter_cleanse(password_prep, password_prep != NULL ? strlen(password_prep) : 0);
    free(password_prep);
    free(client_nounce);
    free(combined_nounce);
@@ -629,6 +631,7 @@ error:
 
    free(salt);
    free(err);
+   pgexporter_cleanse(password_prep, password_prep != NULL ? strlen(password_prep) : 0);
    free(password_prep);
    free(client_nounce);
    free(combined_nounce);
@@ -949,6 +952,7 @@ retry:
 
    pgexporter_log_debug("client_scram256 done");
 
+   pgexporter_cleanse(password_prep, password_prep != NULL ? strlen(password_prep) : 0);
    free(password_prep);
    free(client_first_message_bare);
    free(server_first_message);
@@ -1554,7 +1558,7 @@ server_scram256(char* username, char* password, SSL* ssl, int server_fd)
 
    iteration = atoi(iteration_string);
 
-   memset(&wo_proof[0], 0, sizeof(wo_proof));
+   memset(wo_proof, 0, sizeof(wo_proof));
    pgexporter_snprintf(&wo_proof[0], sizeof(wo_proof), "c=biws,r=%s", combined_nounce);
 
    /* n=,r=... */
@@ -1676,6 +1680,7 @@ error:
 
    free(salt);
    free(err);
+   pgexporter_cleanse(password_prep, password_prep != NULL ? strlen(password_prep) : 0);
    free(password_prep);
    free(client_nounce);
    free(combined_nounce);
@@ -2262,6 +2267,8 @@ salted_password(char* password, char* salt, int salt_length, int iterations, uns
    *result = r;
    *result_length = size;
 
+   pgexporter_cleanse(Ui, sizeof(Ui));
+   pgexporter_cleanse(Ui_prev, sizeof(Ui_prev));
    EVP_MAC_CTX_free(ctx);
    EVP_MAC_free(mac);
    return 0;
@@ -2272,9 +2279,11 @@ error:
    {
       EVP_MAC_CTX_free(ctx);
    }
-   if (mac != NULL)
+   pgexporter_cleanse(Ui, sizeof(Ui));
+   pgexporter_cleanse(Ui_prev, sizeof(Ui_prev));
+   if (r != NULL)
    {
-      EVP_MAC_free(mac);
+      pgexporter_cleanse(r, size);
    }
    free(r);
 
@@ -2399,6 +2408,7 @@ error:
    RAND_cleanup();
 #endif
 
+   pgexporter_cleanse(r, s);
    free(r);
 
    *salt = NULL;
@@ -2502,15 +2512,18 @@ server_signature(char* password, char* salt, int salt_length, int iterations,
    EVP_MAC_CTX_free(ctx);
    EVP_MAC_free(mac);
 
+   pgexporter_cleanse(s_p, s_p != NULL ? s_p_length : 0);
    free(s_p);
    if (do_free)
    {
+      pgexporter_cleanse(s_k, s_k != NULL ? s_k_length : 0);
       free(s_k);
    }
 
    return 0;
 
 error:
+   pgexporter_cleanse(r, size);
    free(r);
    *result = NULL;
    *result_length = 0;
@@ -2523,9 +2536,11 @@ error:
    {
       EVP_MAC_free(mac);
    }
+   pgexporter_cleanse(s_p, s_p != NULL ? s_p_length : 0);
    free(s_p);
    if (do_free)
    {
+      pgexporter_cleanse(s_k, s_k != NULL ? s_k_length : 0);
       free(s_k);
    }
 

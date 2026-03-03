@@ -1307,8 +1307,10 @@ pgexporter_read_users_configuration(void* shm, char* filename)
             {
                warnx("pgexporter: Invalid USER entry: invalid UTF-8 password for user '%s'", username);
                warnx("%s", line);
+               pgexporter_cleanse(password, strlen(password));
                free(password);
-               free(decoded);
+   pgexporter_cleanse(decoded, decoded != NULL ? decoded_length : 0);
+   free(decoded);
                password = NULL;
                decoded = NULL;
                continue;
@@ -1320,8 +1322,10 @@ pgexporter_read_users_configuration(void* shm, char* filename)
             {
                warnx("pgexporter: Invalid USER entry: error counting UTF-8 characters for user '%s'", username);
                warnx("%s", line);
+               pgexporter_cleanse(password, strlen(password));
                free(password);
-               free(decoded);
+   pgexporter_cleanse(decoded, decoded != NULL ? decoded_length : 0);
+   free(decoded);
                password = NULL;
                decoded = NULL;
                continue;
@@ -1331,8 +1335,10 @@ pgexporter_read_users_configuration(void* shm, char* filename)
                pgexporter_log_warn("Password too long for user '%s' (%zu characters)", username, char_count);
                warnx("pgexporter: Invalid USER entry");
                warnx("%s", line);
+               pgexporter_cleanse(password, strlen(password));
                free(password);
-               free(decoded);
+   pgexporter_cleanse(decoded, decoded != NULL ? decoded_length : 0);
+   free(decoded);
                password = NULL;
                decoded = NULL;
                continue;
@@ -1351,7 +1357,8 @@ pgexporter_read_users_configuration(void* shm, char* filename)
             }
 
             free(password);
-            free(decoded);
+   pgexporter_cleanse(decoded, decoded != NULL ? decoded_length : 0);
+   free(decoded);
 
             password = NULL;
             decoded = NULL;
@@ -1368,6 +1375,7 @@ pgexporter_read_users_configuration(void* shm, char* filename)
       goto above;
    }
 
+   pgexporter_cleanse(master_key, master_key != NULL ? strlen(master_key) : 0);
    free(master_key);
 
    fclose(file);
@@ -1376,8 +1384,11 @@ pgexporter_read_users_configuration(void* shm, char* filename)
 
 error:
 
+   pgexporter_cleanse(master_key, master_key != NULL ? strlen(master_key) : 0);
    free(master_key);
+   pgexporter_cleanse(password, password != NULL ? strlen(password) : 0);
    free(password);
+   pgexporter_cleanse(decoded, decoded != NULL ? decoded_length : 0);
    free(decoded);
 
    if (file)
@@ -1389,8 +1400,11 @@ error:
 
 masterkey:
 
+   pgexporter_cleanse(master_key, master_key != NULL ? strlen(master_key) : 0);
    free(master_key);
+   pgexporter_cleanse(password, password != NULL ? strlen(password) : 0);
    free(password);
+   pgexporter_cleanse(decoded, decoded != NULL ? decoded_length : 0);
    free(decoded);
 
    if (file)
@@ -1402,8 +1416,11 @@ masterkey:
 
 above:
 
+   pgexporter_cleanse(master_key, master_key != NULL ? strlen(master_key) : 0);
    free(master_key);
+   pgexporter_cleanse(password, password != NULL ? strlen(password) : 0);
    free(password);
+   pgexporter_cleanse(decoded, decoded != NULL ? decoded_length : 0);
    free(decoded);
 
    if (file)
@@ -1526,7 +1543,8 @@ pgexporter_read_admins_configuration(void* shm, char* filename)
                warnx("pgexporter: Invalid ADMIN entry: invalid UTF-8 password for user '%s'", username);
                warnx("%s", line);
                free(password);
-               free(decoded);
+   pgexporter_cleanse(decoded, decoded != NULL ? decoded_length : 0);
+   free(decoded);
                password = NULL;
                decoded = NULL;
                continue;
@@ -1539,7 +1557,8 @@ pgexporter_read_admins_configuration(void* shm, char* filename)
                warnx("pgexporter: Invalid ADMIN entry: error counting UTF-8 characters for user '%s'", username);
                warnx("%s", line);
                free(password);
-               free(decoded);
+   pgexporter_cleanse(decoded, decoded != NULL ? decoded_length : 0);
+   free(decoded);
                password = NULL;
                decoded = NULL;
                continue;
@@ -1550,7 +1569,8 @@ pgexporter_read_admins_configuration(void* shm, char* filename)
                warnx("pgexporter: Invalid ADMIN entry");
                warnx("%s", line);
                free(password);
-               free(decoded);
+   pgexporter_cleanse(decoded, decoded != NULL ? decoded_length : 0);
+   free(decoded);
                password = NULL;
                decoded = NULL;
                continue;
@@ -1568,16 +1588,10 @@ pgexporter_read_admins_configuration(void* shm, char* filename)
                warnx("%s", line);
             }
 
+            pgexporter_cleanse(password, strlen(password));
             free(password);
-            free(decoded);
-
-            password = NULL;
-            decoded = NULL;
-
-            index++;
-
-            free(password);
-            free(decoded);
+   pgexporter_cleanse(decoded, decoded != NULL ? decoded_length : 0);
+   free(decoded);
 
             password = NULL;
             decoded = NULL;
@@ -1602,8 +1616,11 @@ pgexporter_read_admins_configuration(void* shm, char* filename)
 
 error:
 
+   pgexporter_cleanse(master_key, master_key != NULL ? strlen(master_key) : 0);
    free(master_key);
+   pgexporter_cleanse(password, password != NULL ? strlen(password) : 0);
    free(password);
+   pgexporter_cleanse(decoded, decoded != NULL ? decoded_length : 0);
    free(decoded);
 
    if (file)
@@ -1615,8 +1632,11 @@ error:
 
 masterkey:
 
+   pgexporter_cleanse(master_key, master_key != NULL ? strlen(master_key) : 0);
    free(master_key);
+   pgexporter_cleanse(password, password != NULL ? strlen(password) : 0);
    free(password);
+   pgexporter_cleanse(decoded, decoded != NULL ? decoded_length : 0);
    free(decoded);
 
    if (file)
@@ -1628,8 +1648,11 @@ masterkey:
 
 above:
 
+   pgexporter_cleanse(master_key, master_key != NULL ? strlen(master_key) : 0);
    free(master_key);
+   pgexporter_cleanse(password, password != NULL ? strlen(password) : 0);
    free(password);
+   pgexporter_cleanse(decoded, decoded != NULL ? decoded_length : 0);
    free(decoded);
 
    if (file)

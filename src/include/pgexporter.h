@@ -464,6 +464,15 @@ struct configuration
    struct extension_metrics extensions[MAX_EXTENSIONS_CONFIG_LENGTH]; /**< Extension metrics by extension */
 } __attribute__((aligned(64)));
 
+
+/**
+ * Cleanse a memory area
+ * @param ptr The pointer
+ * @param len The length
+ */
+void
+pgexporter_cleanse(void* ptr, size_t len);
+
 #ifdef __cplusplus
 }
 #endif

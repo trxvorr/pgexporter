@@ -3528,3 +3528,11 @@ pgexporter_free_proc_title(void)
    proc_title_environ_size = 0;
 }
 #endif
+void
+pgexporter_cleanse(void* ptr, size_t len)
+{
+   if (ptr != NULL && len > 0)
+   {
+      OPENSSL_cleanse(ptr, len);
+   }
+}

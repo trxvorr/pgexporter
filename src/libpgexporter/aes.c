@@ -100,8 +100,8 @@ cleanup:
    }
 
    /* Wipe key material from stack */
-   OPENSSL_cleanse(key, sizeof(key));
-   OPENSSL_cleanse(iv, sizeof(iv));
+   pgexporter_cleanse(key, sizeof(key));
+   pgexporter_cleanse(iv, sizeof(iv));
 
    return ret;
 }
@@ -120,8 +120,8 @@ pgexporter_decrypt(char* ciphertext, int ciphertext_length, char* password, char
       return 1;
    }
 
-   memset(&key, 0, sizeof(key));
-   memset(&iv, 0, sizeof(iv));
+   memset(key, 0, sizeof(key));
+   memset(iv, 0, sizeof(iv));
 
    /* Extract salt from the first PBKDF2_SALT_LENGTH bytes */
    memcpy(salt, ciphertext, PBKDF2_SALT_LENGTH);
@@ -142,8 +142,8 @@ pgexporter_decrypt(char* ciphertext, int ciphertext_length, char* password, char
 
 cleanup:
    /* Wipe key material from stack */
-   OPENSSL_cleanse(key, sizeof(key));
-   OPENSSL_cleanse(iv, sizeof(iv));
+   pgexporter_cleanse(key, sizeof(key));
+   pgexporter_cleanse(iv, sizeof(iv));
 
    return ret;
 }
@@ -177,7 +177,7 @@ derive_key_iv(char* password, unsigned char* salt, unsigned char* key, unsigned 
 
 cleanup:
    /* Wipe sensitive derived material */
-   OPENSSL_cleanse(derived, sizeof(derived));
+   pgexporter_cleanse(derived, sizeof(derived));
 
    return ret;
 }
@@ -249,8 +249,8 @@ cleanup:
    }
 
    /* Wipe key material from stack */
-   OPENSSL_cleanse(key, EVP_MAX_KEY_LENGTH);
-   OPENSSL_cleanse(iv, EVP_MAX_IV_LENGTH);
+   pgexporter_cleanse(key, EVP_MAX_KEY_LENGTH);
+   pgexporter_cleanse(iv, EVP_MAX_IV_LENGTH);
 
    return ret;
 }
@@ -323,8 +323,8 @@ cleanup:
    }
 
    /* Wipe key material from stack */
-   OPENSSL_cleanse(key, EVP_MAX_KEY_LENGTH);
-   OPENSSL_cleanse(iv, EVP_MAX_IV_LENGTH);
+   pgexporter_cleanse(key, EVP_MAX_KEY_LENGTH);
+   pgexporter_cleanse(iv, EVP_MAX_IV_LENGTH);
 
    return ret;
 }
@@ -425,8 +425,8 @@ encrypt_decrypt_buffer(unsigned char* origin_buffer, size_t origin_size, unsigne
       goto cleanup;
    }
 
-   memset(&key, 0, sizeof(key));
-   memset(&iv, 0, sizeof(iv));
+   memset(key, 0, sizeof(key));
+   memset(iv, 0, sizeof(iv));
 
    if (enc == 1)
    {
@@ -564,12 +564,12 @@ cleanup:
    }
 
    /* Wipe key material from stack */
-   OPENSSL_cleanse(key, sizeof(key));
-   OPENSSL_cleanse(iv, sizeof(iv));
+   pgexporter_cleanse(key, sizeof(key));
+   pgexporter_cleanse(iv, sizeof(iv));
 
    if (master_key)
    {
-      OPENSSL_cleanse(master_key, strlen(master_key));
+      pgexporter_cleanse(master_key, strlen(master_key));
       free(master_key);
    }
 
